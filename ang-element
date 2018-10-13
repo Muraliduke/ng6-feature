@@ -1,0 +1,108 @@
+entrycomp - dynamic comp so that the app wouldn't expect it to be present at startup, and 
+then you would have to load it, attach it to an element in the DOM
+
+
+ang element;-
+
+@NgModule({
+  declarations: [
+    LoginComponent
+  ],
+  imports: [
+    BrowserModule,
+    FormsModule
+  ],
+  providers: [],
+  bootstrap: [],
+  entryComponents:[
+    LoginComponent
+  ]
+})
+export class AppModule { 
+  constructor(private injector:Injector){
+
+  }
+
+  ngDoBootstrap() {
+    const el = createCustomElement(LoginComponent, { injector: this.injector });
+    customElements.define('ng-login', el);
+   }
+}
+
+for scratch;-
+ng new angular-webcomponents-demo --prefix custom
+
+//custome element prefix
+
+ng add @angular/elements
+
+ng g component analytics-counter --inline-style --inline-template -v Native
+
+..everythng inline and encapsulatn as native
+
+import  { Injector} from '@angular/core';
+import  { createCustomElement } from '@angular/elements';
+
+entryComponents :  [
+   AnalyticsCounterComponent
+]
+
+
+Now you are ready to transform the component into a web component by calling the createCustomElement() method from the ngDoBootstrap() method:
+
+export class AppModule {
+  constructor(private injector : Injector){}
+  ngDoBootstrap(){
+      const el = createCustomElement(AnalyticsCounterComponent, {injector : this.injector});
+  customElements.define('analytics-counter',el);
+  }
+  }
+We are bootstrapping our Angular Component as a custom element in the ngDoBootstrap() method.
+
+The createCustomElement method takes two parameters:
+
+The first parameter is the Angular component that will be used to create the custom element.
+The second parameter is a configuration object that has an injector property set to the current Injector instance.
+Using the createCustomElement API we can transform and Angular 6 component to a Custom Element
+
+
+ng build --prod --output-hashing none
+In the dist folder, you'll find multiple generated files. Ideally, 
+we must have only one file for using the web component but unfortunately the Angular CLI doesn't provide a way to produce on file for now.
+
+
+Create a concatenate.js file in the root folder of your project then add the following content:
+
+const fs = require('fs-extra');
+const concat = require('concat');
+(async function build() {
+const files = [
+'./dist/<PROJECT_NAME>/runtime.js',
+'./dist/<PROJECT_NAME>/polyfills.js',
+'./dist/<PROJECT_NAME>/scripts.js',
+'./dist/<PROJECT_NAME>/main.js',
+]
+await fs.ensureDir('elements')
+await concat(files, 'elements/analytics-counter.js');
+await fs.copyFile('./dist/angular-elements/styles.css', 'elements/styles.css')
+await fs.copy('./dist/angular-elements/assets/', 'elements/assets/' )
+})()
+Creates a new sub-folder elements inside the project folder
+The JS files runtime.js, polyfills.js, scripts.js and main.js are concatenated into a new file analytics-counter.js inside the elements folder
+styles.css from the production build is copied to the elements folder
+Files from the assets folder are copied to the elements folder
+You need to install fs-extra and concat from npm using:
+
+npm install fs-extra concat --save-dev
+Now let's add a script to package.json:
+
+{
+"scripts": {
+...
+"build:elements": "ng build --prod --output-hashing none && node concatenate.js"
+},
+}
+}
+You can run the script using:
+
+npm run build:elements
